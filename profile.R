@@ -3,92 +3,77 @@ start <- Sys.time()
 
 library(dplyr)
 
-#reading in data
-#causal data shows when a UPC was on feature or on display 
-#transaction data shows transactions with the UPCs by store
-tran_classico <- read.csv("tran_classico.csv")
-causal_clas <- read.csv("causal_clas.csv")
+#read in data
+tc_data <- read.csv("test_control.csv")
+tc_data <- tc_data %>% filter(MAIN_ITEM_DESCRIPTION == 'P')
 
-data.join <- left_join(tran_classico, causal_clas, by = c("store", "week"))
+test_stores <- sample(unique(tc_data$LOCATION_ID),60)
+test_stores <- tc_data %>% filter(LOCATION_ID %in% test_stores)
 
-data.select <- data.join[, c(2:5, 8:9)]
 
-data <- data.select %>%
-  mutate(feature_desc = ifelse(is.na(feature_desc), "Not on Feature", feature_desc),
-         display_desc = ifelse(is.na(display_desc), "Not on Display", display_desc))
-
-#changing data types to factors needed for assignment
-data$feature_desc = as.factor(data$feature_desc)
-data$display_desc = as.factor(data$display_desc)
-
-data$feature_desc = relevel(data$feature_desc, ref="Not on Feature")
-data$display_desc = relevel(data$display_desc, ref = "Not on Display")
-
-#creating column indicating whether or no the item is on Feature, creating a separate df for data that is not on display, for this part of the analysis we did not care about the "Feature" attribute
-data$Tr = ifelse(data$feature_desc=="Not on Feature",0,1)
-keep.data <- data %>% filter(display_desc == "Not on Display")
-
-#taking stores average units sold when the item is not on display
-store_avgs <- keep.data %>%
-  filter(Tr == 0) %>%
-  group_by(store) %>%
-  summarise(avg_unit = mean(total_units, na.rm = TRUE)) %>% as.data.frame()
-
-#separating data when the stores are on feature
-store.week.features <- keep.data %>% filter(Tr ==1)
-
-#separating data when the stores are not on feature
-store.week.nofeatures <- keep.data %>% filter(Tr == 0)
-
-#for loop that looks through and finds matching stores for the same week that was not on feature (used as a control store)
-#within those matches picks out the closest match that has the smallest difference
-result_df <- data.frame()
-for (i in 1:nrow(store.week.features)) {
-  matches <- store.week.nofeatures %>%
-    filter(store != as.numeric(store.week.features[i, "store"]),
-           week >= as.numeric(store.week.features[i, "week"]) - 6,
-           week <= as.numeric(store.week.features[i, "week"]) + 6) %>%
-    as.data.frame()  # Convert matches to a dataframe
-  
-  matches$diff = abs(matches$week - as.numeric(store.week.features[i,"week"]))
-  
-  closest_match <- matches %>%
-    group_by(store) %>%
-    summarize(diff = min(diff))
-  
-  joined_match <- closest_match %>%
-    inner_join(matches,by = c("store","diff")) %>% as.data.frame() %>% dplyr::select(1,3,5)
-  
-  
-  joined_match$treat_store = as.numeric(store.week.features[i,"store"])
-  joined_match$treat_week = as.numeric(store.week.features[i,"week"])
-  
-  result_df <- bind_rows(result_df, joined_match)
+#loop to get squared values for January
+for(j in 1:nrow(test_stores)){
+  store_name <- test_stores$LOCATION_ID[j]
+  store_name <- as.character(store_name)
+  for(i in 1:nrow(tc_data)){
+    tc_data$Jan_squared[i] <- (tc_data$January[i] - test_stores$January[j])^2
+    tc_data$Feb_squared[i] <- (tc_data$February[i] - test_stores$February[j])^2
+    tc_data$Mar_squared[i] <- (tc_data$March[i] - test_stores$March[j])^2
+    tc_data$Apr_squared[i] <- (tc_data$April[i] - test_stores$April[j])^2
+    tc_data$May_squared[i] <- (tc_data$May[i] - test_stores$May[j])^2
+    tc_data$Jun_squared[i] <- (tc_data$June[i] - test_stores$June[j])^2
+    tc_data$Jul_squared[i] <- (tc_data$July[i] - test_stores$July[j])^2
+    tc_data$Aug_squared[i] <- (tc_data$August[i] - test_stores$August[j])^2
+    tc_data$Sep_squared[i] <- (tc_data$September[i] - test_stores$September[j])^2
+    tc_data$Oct_squared[i] <- (tc_data$October[i] - test_stores$October[j])^2
+    tc_data$Nov_squared[i] <- (tc_data$November[i] - test_stores$November[j])^2
+    tc_data$Dec_squared[i] <- (tc_data$December[i] - test_stores$December[j])^2
+    
+  }
+  new_column_name <- paste0(store_name[1], "_Jan_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Jan_squared)
+  new_column_name <- paste0(store_name[1], "_Feb_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Feb_squared)
+  new_column_name <- paste0(store_name[1], "_Mar_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Mar_squared)
+  new_column_name <- paste0(store_name[1], "_Apr_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Apr_squared)
+  new_column_name <- paste0(store_name[1], "_May_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := May_squared)
+  new_column_name <- paste0(store_name[1], "_Jun_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Jun_squared)
+  new_column_name <- paste0(store_name[1], "_Jul_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Jul_squared)
+  new_column_name <- paste0(store_name[1], "_Aug_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Aug_squared)
+  new_column_name <- paste0(store_name[1], "_Sep_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Sep_squared)
+  new_column_name <- paste0(store_name[1], "_Oct_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Oct_squared)
+  new_column_name <- paste0(store_name[1], "_Nov_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Nov_squared)
+  new_column_name <- paste0(store_name[1], "_Dec_squared")
+  tc_data <- dplyr::rename(tc_data, !!new_column_name := Dec_squared)
 }
 
-#joining in the control stores average units
-result_df.join = result_df %>%
-  inner_join(store_avgs,by=c("store"))
-result_df.join = result_df.join %>%
-  rename(control_avg_units = avg_unit)
 
-#joining in the treatment stores average units
-result_df.join = result_df.join %>%
-  inner_join(store_avgs,by=c("treat_store"="store"))
-result_df.join = result_df.join %>%
-  rename(treat_avg_units = avg_unit)
-
-#finding the difference between treatment and control stores
-result_df.join$diff = abs(result_df.join$control_avg_units - result_df.join$treat_avg_units)
-#if a stores had more than one match this is finding the smallest match
-final = result_df.join %>%
-  group_by(treat_store,treat_week) %>%
-  summarize(diff = min(diff)) %>% as.data.frame()
-
-final.data = final %>%
-  inner_join(result_df.join,by=c("treat_store","treat_week","diff")) %>% dplyr::select(1,2,4,5)
-
-final.data.2 = final.data %>% distinct(treat_store, treat_week, .keep_all = TRUE)
+for(i in 1:nrow(test_stores)){
+  store_name <- test_stores$LOCATION_ID[i]
+  store_name <- as.character(store_name)
+  store_columns <- grepl(store_name,colnames(tc_data))
+  store_columns[1] <- TRUE
+  store_data <- tc_data[,store_columns]
+  for(j in 1:nrow(store_data)){
+    if(store_data$LOCATION_ID[j] != test_stores$LOCATION_ID[i]){
+      store_data$total[j] <- store_data[j,1] + store_data[j,2] + store_data[j,3] + store_data[j,4] + store_data[j,5] + store_data[j,6] + store_data[j,7] + store_data[j,8] + store_data[j,9] + store_data[j,10] + store_data[j,11] + store_data[j,12] + store_data[j,13]
+      store_data$euclidean[j] <- sqrt(store_data$total[j])
+    }
+  }
+  control_store <- store_data$LOCATION_ID[which.min(store_data$euclidean)]
+  control_store <- as.character(control_store)
+  message <- paste("Test Store ", store_name, " assigned to Control Store ", control_store)
+  print(message)
+}
 
 Rprof(NULL)
 summaryRprof()$by.self
