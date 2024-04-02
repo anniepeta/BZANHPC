@@ -1,4 +1,4 @@
-Rprof(interval = 0.005)
+Rprof()
 start <- Sys.time()
 
 library(tidyverse)
