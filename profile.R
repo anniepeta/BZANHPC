@@ -1,11 +1,7 @@
 Rprof()
 start <- Sys.time()
 
-library(tidyverse)
-library(car)
-library(faraway)
 library(dplyr)
-library(ggfortify)
 
 #reading in data
 #causal data shows when a UPC was on feature or on display 
@@ -15,7 +11,7 @@ causal_clas <- read.csv("causal_clas.csv")
 
 data.join <- left_join(tran_classico, causal_clas, by = c("store", "week"))
 
-data.select <- data.join[, c(1:4, 6:7)]
+data.select <- data.join[, c(2:5, 8:9)]
 
 data <- data.select %>%
   mutate(feature_desc = ifelse(is.na(feature_desc), "Not on Feature", feature_desc),
